@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+@keyframes holo-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes holo-shine {
+  0%   { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+.holo-missing {
+  background: linear-gradient(
+    135deg,
+    #f8f8f8, #cccccc, #f0f0f0, #b8b8b8, #e8e8e8, #ffffff
+  );
+  background-size: 400% 400%;
+  animation: holo-shift 4s ease infinite;
+  color: #666 !important;
+}

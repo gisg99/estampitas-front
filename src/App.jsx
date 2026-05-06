@@ -10,6 +10,20 @@ import { logout } from "./api";
 const App = () => {
   const [token,     setToken]     = useState(() => localStorage.getItem('token'));
   const [activeTab, setActiveTab] = useState("inicio");
+  const [darkMode,  setDarkMode]  = useState(() => {
+    const saved = localStorage.getItem('darkMode') === 'true';
+    if (saved) document.documentElement.classList.add('dark');
+    return saved;
+  });
+
+  const toggleDark = () => {
+    setDarkMode(prev => {
+      const next = !prev;
+      document.documentElement.classList.toggle('dark', next);
+      localStorage.setItem('darkMode', next);
+      return next;
+    });
+  };
 
   const handleAuth = (user) => {
     setToken(localStorage.getItem('token'));
@@ -29,12 +43,12 @@ const App = () => {
     inicio:      <InicioScreen />,
     estampitas:  <EstampitasScreen />,
     intercambio: <IntercambioScreen />,
-    perfil:      <PerfilScreen onLogout={handleLogout} />,
+    perfil:      <PerfilScreen onLogout={handleLogout} darkMode={darkMode} onToggleDark={toggleDark} />,
   };
 
   return (
-    <div className="flex flex-col min-h-screen pb-16">
-      <main className="flex-1 overflow-y-auto">
+    <div className="flex flex-col h-screen">
+      <main className="flex-1 overflow-y-auto pb-16">
         {screens[activeTab]}
       </main>
       <BottomNav active={activeTab} onChange={setActiveTab} />

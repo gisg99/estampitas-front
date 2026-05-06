@@ -41,13 +41,13 @@ const tabs = [
 
 const BottomNav = ({ active, onChange }) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center h-16 z-50">
       {tabs.map(tab => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-xs transition-colors ${
-            active === tab.id ? 'text-blue-600' : 'text-gray-500'
+            active === tab.id ? 'text-blue-500' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           {tab.icon}

@@ -107,7 +107,7 @@ const PLAYERS = [
   { value: 'Lionel Messi',      label: '🇦🇷 Lionel Messi — Argentina' },
 ];
 
-const PerfilScreen = ({ onLogout }) => {
+const PerfilScreen = ({ onLogout, darkMode, onToggleDark }) => {
   const [user,        setUser]        = useState(null);
   const [form,        setForm]        = useState({});
   const [selecciones, setSelecciones] = useState([]);
@@ -151,31 +151,31 @@ const PerfilScreen = ({ onLogout }) => {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-xl font-bold text-gray-800">Mi Perfil</h1>
+      <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Mi Perfil</h1>
 
-      <div className="flex flex-col items-center py-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+      <div className="flex flex-col items-center py-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-3xl font-bold mb-2">
           {(user.name?.[0] ?? '?').toUpperCase()}
         </div>
-        <p className="font-semibold text-gray-800">{user.name}</p>
-        <p className="text-gray-400 text-sm">{user.email}</p>
+        <p className="font-semibold text-gray-800 dark:text-gray-100">{user.name}</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm">{user.email}</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-4">
         <Field label="Nombre" name="name"  value={form.name  ?? ''} onChange={handleChange} />
         <Field label="Email"  name="email" value={form.email ?? ''} onChange={handleChange} type="email" />
         <Field label="Estado" name="estado" value={form.estado ?? ''} onChange={handleChange} />
 
         {/* País */}
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">País</label>
+          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">País</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">{currentFlag}</span>
             <select
               name="pais"
               value={form.pais ?? ''}
               onChange={handleChange}
-              className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200 appearance-none bg-white"
+              className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 appearance-none"
             >
               <option value="">Selecciona un país</option>
               {COUNTRIES.map(c => (
@@ -222,9 +222,22 @@ const PerfilScreen = ({ onLogout }) => {
         </button>
       </div>
 
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{darkMode ? '🌙' : '☀️'}</span>
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Modo oscuro</span>
+        </div>
+        <button
+          onClick={onToggleDark}
+          className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${darkMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${darkMode ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
       <button
         onClick={onLogout}
-        className="w-full py-2.5 rounded-xl text-red-500 font-semibold text-sm border border-red-200 bg-white active:bg-red-50 transition-colors"
+        className="w-full py-2.5 rounded-xl text-red-500 font-semibold text-sm border border-red-200 dark:border-red-900 bg-white dark:bg-gray-800 active:bg-red-50 dark:active:bg-red-950 transition-colors"
       >
         Cerrar sesión
       </button>
@@ -234,25 +247,25 @@ const PerfilScreen = ({ onLogout }) => {
 
 const Field = ({ label, name, value, onChange, type = 'text' }) => (
   <div className="space-y-1">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
+    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</label>
     <input
       type={type}
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
     />
   </div>
 );
 
 const SelectField = ({ label, name, value, onChange, children }) => (
   <div className="space-y-1">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
+    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</label>
     <select
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200 appearance-none bg-white"
+      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 appearance-none"
     >
       {children}
     </select>

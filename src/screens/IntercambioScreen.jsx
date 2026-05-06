@@ -1,57 +1,23 @@
 import { useEffect, useState } from 'react';
-import { getCollection, getSelecciones, removeSticker } from '../api';
-const TEAM_COLORS = {
-  MEX: ['#006847', '#FFFFFF', '#CE1126'],
-  RSA: ['#007A4D', '#FFB612', '#DE3831'],
-  KOR: ['#CD2E3A', '#FFFFFF', '#003478'],
-  CZE: ['#D7141A', '#FFFFFF', '#11457E'],
-  CAN: ['#D80621', '#FFFFFF', '#D80621'],
-  BIH: ['#002395', '#FFCD00', '#FFFFFF'],
-  QAT: ['#8D1B3D', '#FFFFFF', '#8D1B3D'],
-  SUI: ['#D52B1E', '#FFFFFF', '#D52B1E'],
-  BRA: ['#009C3B', '#FFDF00', '#002776'],
-  MAR: ['#C1272D', '#006233', '#FFFFFF'],
-  HAI: ['#00209F', '#D21034', '#000000'],
-  SCO: ['#003078', '#FFFFFF', '#003078'],
-  USA: ['#002868', '#FFFFFF', '#BF0A30'],
-  PAR: ['#D52B1E', '#FFFFFF', '#0038A8'],
-  AUS: ['#003DA5', '#FFD700', '#003DA5'],
-  TUR: ['#E30A17', '#FFFFFF', '#E30A17'],
-  GER: ['#000000', '#DD0000', '#FFCE00'],
-  CUW: ['#002B7F', '#F9E814', '#FFFFFF'],
-  CIV: ['#F77F00', '#FFFFFF', '#009A44'],
-  ECU: ['#FFD100', '#003087', '#CE1126'],
-  NED: ['#FF6600', '#FFFFFF', '#003DA5'],
-  JPN: ['#BC002D', '#FFFFFF', '#BC002D'],
-  SWE: ['#006AA7', '#FECC02', '#006AA7'],
-  TUN: ['#E70013', '#FFFFFF', '#E70013'],
-  BEL: ['#1A1A1A', '#FAE042', '#EF3340'],
-  EGY: ['#CE1126', '#FFFFFF', '#000000'],
-  IRN: ['#239F40', '#FFFFFF', '#DA0000'],
-  NZL: ['#00247D', '#FFFFFF', '#CC142B'],
-  ESP: ['#AA151B', '#F1BF00', '#AA151B'],
-  URU: ['#75AADB', '#FFFFFF', '#75AADB'],
-  KSA: ['#006C35', '#FFFFFF', '#006C35'],
-  CPV: ['#003893', '#CF2027', '#F7D116'],
-  FRA: ['#002395', '#FFFFFF', '#ED2939'],
-  SEN: ['#00853F', '#FDEF42', '#E31B23'],
-  IRQ: ['#CE1126', '#FFFFFF', '#000000'],
-  NOR: ['#EF2B2D', '#FFFFFF', '#002868'],
-  ARG: ['#74ACDF', '#FFFFFF', '#74ACDF'],
-  AUT: ['#ED2939', '#FFFFFF', '#ED2939'],
-  ALG: ['#006233', '#FFFFFF', '#D21034'],
-  JOR: ['#000000', '#FFFFFF', '#007A3D'],
-  POR: ['#006600', '#FF0000', '#FFCB00'],
-  COL: ['#FCD116', '#003087', '#CE1126'],
-  UZB: ['#1EB53A', '#FFFFFF', '#CE1126'],
-  COD: ['#007FFF', '#F7D618', '#CE1126'],
-  ENG: ['#CF081F', '#FFFFFF', '#CF081F'],
-  CRO: ['#CC0000', '#FFFFFF', '#003DA5'],
-  PAN: ['#DA121A', '#FFFFFF', '#0A3DA5'],
-  GHA: ['#CF0921', '#FCD116', '#006B3F'],
+import { getCollection, getSelecciones } from '../api';
+
+const FLAG = {
+  FWC: '🏆', CC:  '🔴',
+  MEX: '🇲🇽', RSA: '🇿🇦', KOR: '🇰🇷', CZE: '🇨🇿',
+  CAN: '🇨🇦', BIH: '🇧🇦', QAT: '🇶🇦', SUI: '🇨🇭',
+  BRA: '🇧🇷', MAR: '🇲🇦', HAI: '🇭🇹', SCO: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  USA: '🇺🇸', PAR: '🇵🇾', AUS: '🇦🇺', TUR: '🇹🇷',
+  GER: '🇩🇪', CUW: '🇨🇼', CIV: '🇨🇮', ECU: '🇪🇨',
+  NED: '🇳🇱', JPN: '🇯🇵', SWE: '🇸🇪', TUN: '🇹🇳',
+  BEL: '🇧🇪', EGY: '🇪🇬', IRN: '🇮🇷', NZL: '🇳🇿',
+  ESP: '🇪🇸', URU: '🇺🇾', KSA: '🇸🇦', CPV: '🇨🇻',
+  FRA: '🇫🇷', SEN: '🇸🇳', IRQ: '🇮🇶', NOR: '🇳🇴',
+  ARG: '🇦🇷', AUT: '🇦🇹', ALG: '🇩🇿', JOR: '🇯🇴',
+  POR: '🇵🇹', COL: '🇨🇴', UZB: '🇺🇿', COD: '🇨🇩',
+  ENG: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', CRO: '🇭🇷', PAN: '🇵🇦', GHA: '🇬🇭',
 };
 
-const DEFAULT_COLORS = ['#2563EB', '#FFFFFF', '#1E40AF'];
+const numLabel = (n) => n === 0 ? '00' : String(n);
 
 const IntercambioScreen = () => {
   const [selecciones, setSelecciones] = useState([]);
@@ -65,11 +31,6 @@ const IntercambioScreen = () => {
       setLoading(false);
     });
   }, []);
-
-  const handleRemove = async (id) => {
-    const updated = await removeSticker(id);
-    setCollection(prev => prev.map(s => s.id === id ? { ...s, quantity: updated.quantity } : s));
-  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-full text-gray-400">Cargando...</div>;
@@ -92,58 +53,93 @@ const IntercambioScreen = () => {
   const grouped = selecciones
     .map(sel => ({
       sel,
-      colors: TEAM_COLORS[sel.abreviatura] ?? DEFAULT_COLORS,
-      stickers: duplicates.filter(s => s.country_abrv === sel.abreviatura),
+      flag: FLAG[sel.abreviatura] ?? '🏳️',
+      stickers: duplicates
+        .filter(s => s.country_abrv === sel.abreviatura)
+        .sort((a, b) => a.number - b.number),
     }))
     .filter(g => g.stickers.length > 0);
 
+  const totalExtras = duplicates.reduce((sum, s) => sum + s.quantity - 1, 0);
+
+  const buildMessage = () => {
+    const lines = grouped.map(({ sel, flag, stickers }) => {
+      const nums = stickers.map(s => {
+        const extras = s.quantity - 1;
+        return extras === 1 ? numLabel(s.number) : `${numLabel(s.number)}×${extras}`;
+      }).join(', ');
+      return `${flag} ${sel.abreviatura}: ${nums}`;
+    });
+    return `Mis repetidas 🔄\n\n${lines.join('\n')}`;
+  };
+
+  const shareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildMessage())}`, '_blank');
+  };
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-baseline gap-2">
-        <h1 className="text-xl font-bold text-gray-800">Intercambio</h1>
-        <span className="text-sm text-amber-500 font-semibold">{duplicates.length} repetidas</span>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex items-baseline gap-2 py-1">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Intercambio</h1>
+          <span className="text-sm text-red-500 font-semibold">{totalExtras} para cambiar</span>
+        </div>
+
+        {grouped.map(({ sel, flag, stickers }) => {
+          const extras = stickers.reduce((sum, s) => sum + s.quantity - 1, 0);
+          return (
+            <div key={sel.abreviatura} className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl leading-none">{flag}</span>
+                <span
+                  className="font-bold text-gray-800 text-sm"
+                  style={{ fontFamily: "'Syncopate', sans-serif" }}
+                >
+                  <span className="text-gray-800 dark:text-gray-100">{sel.abreviatura}</span>
+                </span>
+                {/^[A-L]$/.test(sel.grupo) && (
+                  <span className="text-xs text-gray-400">Grupo {sel.grupo}</span>
+                )}
+                <span className="ml-auto text-xs font-semibold text-red-500">
+                  ×{extras} para cambiar
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {stickers.map(s => {
+                  const sExtras = s.quantity - 1;
+                  return (
+                    <span
+                      key={s.id}
+                      className="relative inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-gray-700 dark:text-gray-200 min-w-[2.25rem]"
+                    >
+                      {numLabel(s.number)}
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center leading-none">
+                        ×{sExtras}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {grouped.map(({ sel, colors, stickers }) => (
-        <div key={sel.abreviatura} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-2 flex items-center gap-2" style={{ backgroundColor: colors[0] + '18' }}>
-            <div className="flex gap-1">
-              {colors.map((c, i) => (
-                <div key={i} className="w-2 h-5 rounded-full" style={{ backgroundColor: c }} />
-              ))}
-            </div>
-            <span className="font-semibold text-gray-700 text-sm">{sel.nombre}</span>
-            <span className="text-xs text-gray-400 ml-1">Grupo {sel.grupo}</span>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {stickers.map(s => (
-              <div key={s.id} className="flex items-center px-4 py-2.5 gap-3">
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
-                  style={{ backgroundColor: colors[0] }}
-                >
-                  {s.number}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 capitalize">{s.content}</p>
-                  <p className="text-xs text-gray-400 capitalize">{s.type}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">
-                    ×{s.quantity}
-                  </span>
-                  <button
-                    onClick={() => handleRemove(s.id)}
-                    className="w-7 h-7 rounded-full bg-red-50 text-red-400 flex items-center justify-center text-lg leading-none hover:bg-red-100 transition-colors"
-                  >
-                    −
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="shrink-0 relative">
+        <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none" />
+        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+          <button
+            onClick={shareWhatsApp}
+            className="w-full bg-[#25D366] text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+            </svg>
+            Compartir por WhatsApp
+          </button>
         </div>
-      ))}
+      </div>
     </div>
   );
 };

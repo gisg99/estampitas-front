@@ -38,6 +38,13 @@ export const addSticker = (id) =>
 export const removeSticker = (id) =>
   fetch(`${BASE}/collection/${id}`, { method: 'DELETE', headers: authHeaders() }).then(r => r.json());
 
+export const batchSetStickers = (changes) =>
+  fetch(`${BASE}/collection`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ changes }),
+  }).then(r => r.json());
+
 export const getUser = () =>
   fetch(`${BASE}/user`, { headers: authHeaders() }).then(r => r.json());
 

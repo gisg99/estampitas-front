@@ -1,18 +1,26 @@
-const StickerCard = ({ s, colors, owned, onAdd, onRemove }) => {
-  const isHolo       = s.type === 'escudo';
-  const isHorizontal = s.type === 'alineacion';
-  const duplicate    = s.quantity > 1;
-  const color        = colors[0];
+import { useRef } from 'react';
+
+const StickerCard = ({ s, colors, owned, isEditing, onAdd, onSubtract }) => {
+  const pressTimer   = useRef(null);
+  const didLongPress = useRef(false);
+  const startPos     = useRef({ x: 0, y: 0 });
+
+  const isHolo    = s.type === 'escudo';
+  const duplicate = s.quantity > 1;
+  const color     = colors[0];
 
   const sizeClass = 'w-full aspect-square rounded-3xl rounded-br-sm';
+  let cardClass = `relative flex flex-col items-center justify-center text-xs font-semibold transition-all ${sizeClass}`;
+  if (isEditing) cardClass += ' active:scale-95 touch-none select-none';
+  else           cardClass += ' cursor-default';
 
-  let cardClass = `relative flex flex-col items-center justify-center text-xs font-semibold transition-all active:scale-95 ${sizeClass}`;
-  let cardStyle = {};
+  let cardStyle = { WebkitUserSelect: 'none', userSelect: 'none' };
 
   if (isHolo) {
     if (owned) {
       const [c1, c2, c3] = colors;
       cardStyle = {
+        ...cardStyle,
         background: `linear-gradient(135deg, ${c1}, ${c2}, ${c3}, ${c1}, ${c2}, ${c3}, ${c1})`,
         backgroundSize: '400% 400%',
         animation: 'holo-shift 4s ease infinite',
@@ -22,25 +30,59 @@ const StickerCard = ({ s, colors, owned, onAdd, onRemove }) => {
       };
     } else {
       cardClass += ' holo-missing';
-      cardStyle = { border: '3px solid #B8BEC8' };
+      cardStyle = { ...cardStyle, border: '3px solid #B8BEC8' };
     }
   } else if (owned) {
-    cardStyle = {
-      backgroundColor: color,
-      border: `3px solid ${color}`,
-      color: '#fff',
-    };
+    cardStyle = { ...cardStyle, backgroundColor: color, border: `3px solid ${color}`, color: '#fff' };
   } else {
-    cardStyle = {
-      backgroundColor: `${color}22`,
-      border: `3px solid ${color}`,
-      color: color,
-    };
+    cardStyle = { ...cardStyle, backgroundColor: `${color}22`, border: `3px solid ${color}`, color };
   }
+
+  const onPointerDown = (e) => {
+    if (!isEditing) return;
+    didLongPress.current = false;
+    startPos.current = { x: e.clientX, y: e.clientY };
+    pressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      onSubtract(s.id);
+    }, 500);
+  };
+
+  const onPointerUp = () => {
+    if (!isEditing) return;
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    if (!didLongPress.current) onAdd(s.id);
+    didLongPress.current = false;
+  };
+
+  const onPointerMove = (e) => {
+    if (!pressTimer.current) return;
+    if (Math.abs(e.clientX - startPos.current.x) > 8 ||
+        Math.abs(e.clientY - startPos.current.y) > 8) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const cancelPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    didLongPress.current = false;
+  };
 
   return (
     <button
-      onClick={() => owned ? onRemove(s.id) : onAdd(s.id)}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerMove={onPointerMove}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      onContextMenu={e => e.preventDefault()}
       className={cardClass}
       style={cardStyle}
     >
@@ -59,18 +101,18 @@ const StickerCard = ({ s, colors, owned, onAdd, onRemove }) => {
         </span>
       )}
 
-      <span className="text-xl relative z-10 leading-none">{s.number}</span>
+      <span className="text-xl relative z-10 leading-none">{s.number === 0 ? '00' : s.number}</span>
 
       {duplicate && (
-        <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center z-20">
-          {s.quantity}
+        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[1rem] h-4 px-0.5 flex items-center justify-center z-20">
+          x{s.quantity - 1}
         </span>
       )}
     </button>
   );
 };
 
-const AlbumPage = ({ seleccion, stickers, onAdd, onRemove }) => {
+const AlbumPage = ({ seleccion, stickers, isEditing, onAdd, onSubtract }) => {
   const colors = seleccion.colors ?? ['#374151', '#6B7280', '#9CA3AF'];
   const color  = colors[0];
   const owned  = stickers.filter(s => s.quantity > 0).length;
@@ -85,12 +127,17 @@ const AlbumPage = ({ seleccion, stickers, onAdd, onRemove }) => {
         </div>
         <div>
           <h2
-            className="font-medium text-gray-800 text-3xl leading-none"
+            className="font-medium text-gray-800 dark:text-gray-100 text-3xl leading-none"
             style={{ fontFamily: "'Syncopate', sans-serif" }}
           >
             {seleccion.abreviatura}
           </h2>
-          <span className="text-[14px] text-gray-900">Grupo {seleccion.grupo}</span>
+          {/^[A-L]$/.test(seleccion.grupo)
+            ? <span className="text-[14px] text-gray-900 dark:text-gray-300">Grupo {seleccion.grupo}</span>
+            : seleccion.abreviatura === 'FWC'
+              ? <span className="text-[14px] text-gray-900 dark:text-gray-300">FIFA World Cup 2026™</span>
+              : null
+          }
         </div>
         <span className="ml-auto text-lg text-gray-900 font-semibold">
           {owned}/{stickers.length}
@@ -104,8 +151,9 @@ const AlbumPage = ({ seleccion, stickers, onAdd, onRemove }) => {
             s={s}
             colors={colors}
             owned={s.quantity > 0}
+            isEditing={isEditing}
             onAdd={onAdd}
-            onRemove={onRemove}
+            onSubtract={onSubtract}
           />
         ))}
       </div>

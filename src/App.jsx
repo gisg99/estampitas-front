@@ -7,10 +7,17 @@ import PerfilScreen from "./screens/PerfilScreen";
 import AuthScreen from "./screens/AuthScreen";
 import { logout } from "./api";
 
+const getTradeParam = () => {
+  const v = new URLSearchParams(window.location.search).get('trade');
+  if (v) window.history.replaceState({}, '', window.location.pathname);
+  return v;
+};
+
 const App = () => {
-  const [token,     setToken]     = useState(() => localStorage.getItem('token'));
-  const [activeTab, setActiveTab] = useState("inicio");
-  const [darkMode,  setDarkMode]  = useState(() => {
+  const [token,       setToken]       = useState(() => localStorage.getItem('token'));
+  const [activeTab,   setActiveTab]   = useState("inicio");
+  const [tradeUserId, setTradeUserId] = useState(() => getTradeParam());
+  const [darkMode,    setDarkMode]    = useState(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     if (saved) document.documentElement.classList.add('dark');
     return saved;
@@ -25,9 +32,9 @@ const App = () => {
     });
   };
 
-  const handleAuth = (user) => {
+  const handleAuth = () => {
     setToken(localStorage.getItem('token'));
-    setActiveTab("inicio");
+    setActiveTab(tradeUserId ? 'intercambio' : 'inicio');
   };
 
   const handleLogout = () => {
@@ -35,14 +42,24 @@ const App = () => {
     setToken(null);
   };
 
+  const handleTabChange = (tab) => {
+    if (tab !== 'intercambio') setTradeUserId(null);
+    setActiveTab(tab);
+  };
+
   if (!token) {
     return <AuthScreen onAuth={handleAuth} />;
+  }
+
+  // Switch to intercambio if trade param was in URL
+  if (tradeUserId && activeTab !== 'intercambio') {
+    setActiveTab('intercambio');
   }
 
   const screens = {
     inicio:      <InicioScreen />,
     estampitas:  <EstampitasScreen />,
-    intercambio: <IntercambioScreen />,
+    intercambio: <IntercambioScreen tradeUserId={tradeUserId} onClearTrade={() => setTradeUserId(null)} />,
     perfil:      <PerfilScreen onLogout={handleLogout} darkMode={darkMode} onToggleDark={toggleDark} />,
   };
 
@@ -51,7 +68,7 @@ const App = () => {
       <main className="flex-1 overflow-y-auto pb-16">
         {screens[activeTab]}
       </main>
-      <BottomNav active={activeTab} onChange={setActiveTab} />
+      <BottomNav active={activeTab} onChange={handleTabChange} />
     </div>
   );
 };

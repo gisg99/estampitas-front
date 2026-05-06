@@ -54,3 +54,6 @@ export const updateUser = (data) =>
     headers: authHeaders(),
     body: JSON.stringify(data),
   }).then(r => r.json());
+
+export const getTradeProfile = (userId) =>
+  fetch(`${BASE}/trade/${userId}`).then(r => r.json());

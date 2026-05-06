@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlbumPage } from '../components/AlbumPage';
 import { getCollection, getSelecciones, batchSetStickers } from '../api';
 
@@ -55,6 +55,47 @@ const TEAM_COLORS = {
   GHA: ['#CF0921', '#FCD116', '#006B3F'],
 };
 
+const FLAG_MAP = {
+  MEX: 'mx',  RSA: 'za',  KOR: 'kr',  CZE: 'cz',
+  CAN: 'ca',  BIH: 'ba',  QAT: 'qa',  SUI: 'ch',
+  BRA: 'br',  MAR: 'ma',  HAI: 'ht',  SCO: 'gb-sct',
+  USA: 'us',  PAR: 'py',  AUS: 'au',  TUR: 'tr',
+  GER: 'de',  CUW: 'cw',  CIV: 'ci',  ECU: 'ec',
+  NED: 'nl',  JPN: 'jp',  SWE: 'se',  TUN: 'tn',
+  BEL: 'be',  EGY: 'eg',  IRN: 'ir',  NZL: 'nz',
+  ESP: 'es',  URU: 'uy',  KSA: 'sa',  CPV: 'cv',
+  FRA: 'fr',  SEN: 'sn',  IRQ: 'iq',  NOR: 'no',
+  ARG: 'ar',  AUT: 'at',  ALG: 'dz',  JOR: 'jo',
+  POR: 'pt',  COL: 'co',  UZB: 'uz',  COD: 'cd',
+  ENG: 'gb-eng', CRO: 'hr', PAN: 'pa', GHA: 'gh',
+};
+
+const FlagCircle = ({ abrv, colors }) => {
+  if (abrv === 'FWC') {
+    return (
+      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+        <span className="text-[7px] font-bold leading-none" style={{ color: '#78530A' }}>FWC</span>
+      </div>
+    );
+  }
+  if (abrv === 'CC') {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-red-600">
+        <span className="text-[8px] font-bold text-white leading-none">CC</span>
+      </div>
+    );
+  }
+  const iso = FLAG_MAP[abrv];
+  if (iso) {
+    return <img src={`https://flagcdn.com/w40/${iso}.png`} alt={abrv} className="w-full h-full object-cover" />;
+  }
+  return (
+    <div className="w-full h-full flex">
+      {colors.map((c, i) => <div key={i} className="flex-1" style={{ backgroundColor: c }} />)}
+    </div>
+  );
+};
+
 const EstampitasScreen = () => {
   const [selecciones,     setSelecciones]     = useState([]);
   const [collection,      setCollection]      = useState([]);
@@ -62,6 +103,10 @@ const EstampitasScreen = () => {
   const [isEditing,       setIsEditing]       = useState(false);
   const [saving,          setSaving]          = useState(false);
   const [loading,         setLoading]         = useState(true);
+
+  const sectionRefs = useRef({});
+  const scrollTo = (abrv) =>
+    sectionRefs.current[abrv]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   useEffect(() => {
     Promise.all([getSelecciones(), getCollection()]).then(([sels, col]) => {
@@ -79,17 +124,17 @@ const EstampitasScreen = () => {
     });
   }, []);
 
-  const handleAdd = (id) => {
+  const handleAdd = useCallback((id) => {
     setLocalCollection(prev =>
       prev.map(s => s.id === id ? { ...s, quantity: s.quantity + 1 } : s)
     );
-  };
+  }, []);
 
-  const handleSubtract = (id) => {
+  const handleSubtract = useCallback((id) => {
     setLocalCollection(prev =>
       prev.map(s => s.id === id ? { ...s, quantity: Math.max(0, s.quantity - 1) } : s)
     );
-  };
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -113,55 +158,147 @@ const EstampitasScreen = () => {
     setIsEditing(false);
   };
 
+  const stickersByCountry = useMemo(() => {
+    const map = {};
+    for (const s of localCollection) {
+      if (!map[s.country_abrv]) map[s.country_abrv] = [];
+      map[s.country_abrv].push(s);
+    }
+    const fwc = map['FWC'] ?? [];
+    map['FWC_A'] = fwc.filter(s => s.number <= 8);
+    map['FWC_B'] = fwc.filter(s => s.number >= 9);
+    return map;
+  }, [localCollection]);
+
   if (loading) {
     return <div className="flex items-center justify-center h-full text-gray-400">Cargando...</div>;
   }
 
+  const fwcSel    = selecciones.find(s => s.abreviatura === 'FWC');
+  const otherSels = selecciones.filter(s => s.abreviatura !== 'FWC');
+
+  // Lista del índice: FWC_A al inicio, resto en orden, FWC_B al final
+  const indexItems = [
+    ...(fwcSel ? [{ ...fwcSel, _key: 'FWC_A' }] : []),
+    ...otherSels.map(s => ({ ...s, _key: s.abreviatura })),
+    ...(fwcSel ? [{ ...fwcSel, _key: 'FWC_B' }] : []),
+  ];
+
   return (
     <div className="space-y-2">
-      <div className="sticky top-0 z-20 flex items-center px-4 pt-4 pb-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
-        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex-1">Estampitas</h1>
-        {isEditing ? (
-          <div className="flex gap-2">
+      {isEditing && (
+        <div className="fixed bottom-16 inset-x-0 z-40 flex justify-center pointer-events-none">
+          <div className="mx-4 mb-2 px-4 py-2.5 bg-gray-900/85 dark:bg-gray-700/90 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col gap-0.5 text-center">
+            <p className="text-xs text-white/90">Toca una estampa para agregarla</p>
+            <p className="text-xs text-white/90">Mantén pulsada una estampa para quitarla</p>
+          </div>
+        </div>
+      )}
+      <div className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center px-4 pt-4 pb-2">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex-1">Estampitas</h1>
+          {isEditing ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancel}
+                className="text-sm text-gray-500 px-3 py-1.5 rounded-xl border border-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 text-sm text-white bg-blue-600 px-3 py-1.5 rounded-xl disabled:opacity-50"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M4 3h11l6 6v13H4V3zm3 1v5h6V4H7zm0 10v6h10v-6H7z" clipRule="evenodd" />
+                </svg>
+                {saving ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={handleCancel}
-              className="text-sm text-gray-500 px-3 py-1.5 rounded-xl border border-gray-300"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 text-sm text-white bg-blue-600 px-3 py-1.5 rounded-xl disabled:opacity-50"
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-1.5 text-sm text-blue-600 px-3 py-1.5 rounded-xl border border-blue-600"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path fillRule="evenodd" d="M4 3h11l6 6v13H4V3zm3 1v5h6V4H7zm0 10v6h10v-6H7z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
               </svg>
-              {saving ? 'Guardando…' : 'Guardar'}
+              Editar
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1.5 text-sm text-blue-600 px-3 py-1.5 rounded-xl border border-blue-600"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-              <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
-            </svg>
-            Editar
-          </button>
-        )}
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-3 pt-1" style={{ scrollbarWidth: 'none' }}>
+          {indexItems.reduce((items, item, i) => {
+            const getLabel = (it) => {
+              if (!it) return null;
+              if (it._key === 'FWC_A' || it._key === 'FWC_B') return 'FWC';
+              if (it.abreviatura === 'CC') return 'CC';
+              if (/^[A-L]$/.test(it.grupo)) return it.grupo;
+              return null;
+            };
+            const label     = getLabel(item);
+            const prevLabel = getLabel(indexItems[i - 1]);
+            if (label && label !== prevLabel) {
+              items.push(
+                <span key={`g-${item._key}`} className="flex-shrink-0 text-[11px] font-bold text-gray-400 pl-1 leading-none">
+                  {label}
+                </span>
+              );
+            }
+            items.push(
+              <button
+                key={item._key}
+                onClick={() => scrollTo(item._key)}
+                className="flex-shrink-0 w-8 h-8 rounded-full rounded-br-none overflow-hidden ring-1 ring-black/10 dark:ring-white/10 active:scale-90 transition-transform"
+                title={item.nombre}
+              >
+                <FlagCircle abrv={item.abreviatura} colors={item.colors} />
+              </button>
+            );
+            return items;
+          }, [])}
+        </div>
       </div>
-      {selecciones.map(sel => (
-        <AlbumPage
+      {fwcSel && (
+        <div ref={el => { sectionRefs.current['FWC_A'] = el; }} className="scroll-mt-32">
+          <AlbumPage
+            seleccion={fwcSel}
+            stickers={stickersByCountry['FWC_A'] ?? []}
+            subtitle="Estampas 00–08"
+            isEditing={isEditing}
+            onAdd={handleAdd}
+            onSubtract={handleSubtract}
+          />
+        </div>
+      )}
+      {otherSels.map(sel => (
+        <div
           key={sel.abreviatura}
-          seleccion={sel}
-          stickers={localCollection.filter(s => s.country_abrv === sel.abreviatura)}
-          isEditing={isEditing}
-          onAdd={handleAdd}
-          onSubtract={handleSubtract}
-        />
+          ref={el => { sectionRefs.current[sel.abreviatura] = el; }}
+          className="scroll-mt-32"
+        >
+          <AlbumPage
+            seleccion={sel}
+            stickers={stickersByCountry[sel.abreviatura] ?? []}
+            isEditing={isEditing}
+            onAdd={handleAdd}
+            onSubtract={handleSubtract}
+          />
+        </div>
       ))}
+      {fwcSel && (
+        <div ref={el => { sectionRefs.current['FWC_B'] = el; }} className="scroll-mt-32">
+          <AlbumPage
+            seleccion={fwcSel}
+            stickers={stickersByCountry['FWC_B'] ?? []}
+            subtitle="Estampas 09–19"
+            isEditing={isEditing}
+            onAdd={handleAdd}
+            onSubtract={handleSubtract}
+          />
+        </div>
+      )}
     </div>
   );
 };

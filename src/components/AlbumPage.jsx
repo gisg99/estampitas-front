@@ -1,6 +1,6 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 
-const StickerCard = ({ s, colors, owned, isEditing, onAdd, onSubtract }) => {
+const StickerCard = memo(({ s, colors, owned, isEditing, onAdd, onSubtract }) => {
   const pressTimer   = useRef(null);
   const didLongPress = useRef(false);
   const startPos     = useRef({ x: 0, y: 0 });
@@ -110,9 +110,13 @@ const StickerCard = ({ s, colors, owned, isEditing, onAdd, onSubtract }) => {
       )}
     </button>
   );
-};
+}, (prev, next) =>
+  prev.s.quantity  === next.s.quantity &&
+  prev.owned       === next.owned      &&
+  prev.isEditing   === next.isEditing
+);
 
-const AlbumPage = ({ seleccion, stickers, isEditing, onAdd, onSubtract }) => {
+const AlbumPage = memo(({ seleccion, stickers, isEditing, onAdd, onSubtract, subtitle }) => {
   const colors = seleccion.colors ?? ['#374151', '#6B7280', '#9CA3AF'];
   const color  = colors[0];
   const owned  = stickers.filter(s => s.quantity > 0).length;
@@ -132,11 +136,13 @@ const AlbumPage = ({ seleccion, stickers, isEditing, onAdd, onSubtract }) => {
           >
             {seleccion.abreviatura}
           </h2>
-          {/^[A-L]$/.test(seleccion.grupo)
-            ? <span className="text-[14px] text-gray-900 dark:text-gray-300">Grupo {seleccion.grupo}</span>
-            : seleccion.abreviatura === 'FWC'
-              ? <span className="text-[14px] text-gray-900 dark:text-gray-300">FIFA World Cup 2026™</span>
-              : null
+          {subtitle
+            ? <span className="text-[14px] text-gray-900 dark:text-gray-300">{subtitle}</span>
+            : /^[A-L]$/.test(seleccion.grupo)
+              ? <span className="text-[14px] text-gray-900 dark:text-gray-300">Grupo {seleccion.grupo}</span>
+              : seleccion.abreviatura === 'FWC'
+                ? <span className="text-[14px] text-gray-900 dark:text-gray-300">FIFA World Cup 2026™</span>
+                : null
           }
         </div>
         <span className="ml-auto text-lg text-gray-900 font-semibold">
@@ -159,6 +165,6 @@ const AlbumPage = ({ seleccion, stickers, isEditing, onAdd, onSubtract }) => {
       </div>
     </div>
   );
-};
+});
 
 export { AlbumPage };

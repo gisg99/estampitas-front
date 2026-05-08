@@ -1,5 +1,12 @@
 import { memo, useRef } from 'react';
 
+const isColorDark = (hex) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.25;
+};
+
 const StickerCard = memo(({ s, colors, owned, isEditing, onAdd, onSubtract }) => {
   const pressTimer   = useRef(null);
   const didLongPress = useRef(false);
@@ -35,7 +42,12 @@ const StickerCard = memo(({ s, colors, owned, isEditing, onAdd, onSubtract }) =>
   } else if (owned) {
     cardStyle = { ...cardStyle, backgroundColor: color, border: `3px solid ${color}`, color: '#fff' };
   } else {
-    cardStyle = { ...cardStyle, backgroundColor: `${color}22`, border: `3px solid ${color}`, color };
+    if (isColorDark(color)) {
+      cardClass += ' text-gray-700 dark:text-white border-[3px] border-solid border-[var(--card-border)] dark:border-white';
+      cardStyle = { ...cardStyle, '--card-border': color, backgroundColor: `${color}22` };
+    } else {
+      cardStyle = { ...cardStyle, backgroundColor: `${color}22`, border: `3px solid ${color}`, color };
+    }
   }
 
   const onPointerDown = (e) => {

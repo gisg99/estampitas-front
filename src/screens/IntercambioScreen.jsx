@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getCollection, getSelecciones, getUser, getTradeProfile } from '../api';
+import { getCollection, getSelecciones, getUser, getTradeProfile, batchSetStickers } from '../api';
 
 const FLAG = {
   FWC: '🏆', CC:  '🔴',
@@ -35,6 +35,8 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
   const [tradeLoading,  setTradeLoading]  = useState(false);
   const [tradeError,    setTradeError]    = useState(null);
   const [simulated,     setSimulated]     = useState(false);
+  const [confirming,    setConfirming]    = useState(false);
+  const [confirmed,     setConfirmed]     = useState(false);
   const [copied,        setCopied]        = useState(false);
 
   useEffect(() => {
@@ -50,6 +52,7 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
     if (!tradeUserId) { setTradeProfile(null); setTradeError(null); return; }
     setTradeLoading(true);
     setSimulated(false);
+    setConfirmed(false);
     getTradeProfile(tradeUserId)
       .then(p => { if (p.error) setTradeError(p.error); else setTradeProfile(p); })
       .catch(() => setTradeError('No se pudo cargar el perfil'))
@@ -75,6 +78,28 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
 
     return { canGive, canReceive, tradeCount: Math.min(canGive.length, canReceive.length) };
   }, [tradeProfile, collection]);
+
+  // ── Confirm trade ──────────────────────────────────────────────────────────
+  const confirmTrade = async () => {
+    if (!tradeData) return;
+    const { canGive, canReceive, tradeCount } = tradeData;
+    setConfirming(true);
+    try {
+      const changes = [];
+      for (let i = 0; i < tradeCount; i++) {
+        changes.push({ id: canGive[i].id,              quantity: canGive[i].quantity - 1 });
+        const mySticker = collection.find(s => s.id === canReceive[i].sticker_id);
+        changes.push({ id: canReceive[i].sticker_id,  quantity: (mySticker?.quantity ?? 0) + 1 });
+      }
+      await batchSetStickers(changes);
+      const newCollection = await getCollection();
+      setCollection(newCollection);
+      setSimulated(false);
+      setConfirmed(true);
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   // ── Share link ──────────────────────────────────────────────────────────────
   const copyLink = async () => {
@@ -178,13 +203,27 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
 
         {/* Bottom action */}
         {tradeCount > 0 && (
-          <div className="shrink-0 p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+          <div className="shrink-0 p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 space-y-2">
+            {confirmed && (
+              <p className="text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                ¡Intercambio registrado! 🎉
+              </p>
+            )}
             <button
-              onClick={() => setSimulated(v => !v)}
+              onClick={() => { setSimulated(v => !v); setConfirmed(false); }}
               className="w-full bg-blue-600 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
             >
               {simulated ? 'Ocultar simulación' : `Simular ${tradeCount} intercambio${tradeCount > 1 ? 's' : ''}`}
             </button>
+            {simulated && (
+              <button
+                onClick={confirmTrade}
+                disabled={confirming}
+                className="w-full bg-emerald-600 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {confirming ? 'Registrando…' : `✓ Confirmar intercambio`}
+              </button>
+            )}
           </div>
         )}
       </div>

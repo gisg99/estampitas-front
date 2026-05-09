@@ -57,3 +57,19 @@ export const updateUser = (data) =>
 
 export const getTradeProfile = (userId) =>
   fetch(`${BASE}/trade/${userId}`).then(r => r.json());
+
+export const createTradeRequest = (to_user_id, trades) =>
+  fetch(`${BASE}/trade-requests`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ to_user_id, trades }),
+  }).then(r => r.json());
+
+export const getPendingTradeRequests = () =>
+  fetch(`${BASE}/trade-requests/pending`, { headers: authHeaders() }).then(r => r.json());
+
+export const acceptTradeRequest = (id) =>
+  fetch(`${BASE}/trade-requests/${id}/accept`, { method: 'POST', headers: authHeaders() }).then(r => r.json());
+
+export const rejectTradeRequest = (id) =>
+  fetch(`${BASE}/trade-requests/${id}/reject`, { method: 'POST', headers: authHeaders() }).then(r => r.json());

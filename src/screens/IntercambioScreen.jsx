@@ -46,7 +46,7 @@ const TradePill = ({ s }) => {
   );
 };
 
-const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
+const IntercambioScreen = ({ tradeUserId, onClearTrade, onPendingCountChange }) => {
   const [selecciones,     setSelecciones]     = useState([]);
   const [collection,      setCollection]      = useState([]);
   const [loading,         setLoading]         = useState(true);
@@ -63,7 +63,8 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
   const [pendingReceive,   setPendingReceive]   = useState(null);
   const [checkMarks,       setCheckMarks]       = useState({});
   const [pendingRequests,  setPendingRequests]  = useState([]);
-  const [requestAction,    setRequestAction]    = useState({}); // {[id]: 'accepting'|'rejecting'|'done'|'error'}
+  const [requestAction,    setRequestAction]    = useState({}); // {[id]: 'accepting'|'rejecting'|'error'}
+  const [showRequests,     setShowRequests]     = useState(false);
 
   useEffect(() => {
     Promise.all([getSelecciones(), getCollection(), getUser(), getPendingTradeRequests()])
@@ -75,6 +76,10 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    onPendingCountChange?.(pendingRequests.length);
+  }, [pendingRequests.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!tradeUserId) { setTradeProfile(null); setTradeError(null); return; }
@@ -533,11 +538,20 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
             <span className='text-xs text-center text-gray-500'>Automáticamente se genera el intercambio más eficiente según nuestro algoritmo</span>
             {simulated && (
               <button
-                onClick={confirmTrade}
-                disabled={confirming}
-                className="w-full bg-emerald-600 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                onClick={() => {
+                  setAgreedTrades(
+                    Array.from({ length: tradeCount }, (_, i) => ({
+                      give:    canGive[i],
+                      receive: canReceive[i],
+                    }))
+                  );
+                  setCheckMarks({});
+                  setSimulated(false);
+                  setInteractiveMode('checklist');
+                }}
+                className="w-full bg-emerald-600 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
               >
-                {confirming ? 'Registrando…' : '✓ Confirmar intercambio'}
+                ✓ Confirmar intercambio
               </button>
             )}
           </div>
@@ -579,58 +593,84 @@ const IntercambioScreen = ({ tradeUserId, onClearTrade }) => {
   };
 
   const pendingSection = pendingRequests.length > 0 && (
-    <div className="space-y-3">
-      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-        Solicitudes pendientes · {pendingRequests.length}
-      </p>
-      {pendingRequests.map(req => {
-        const busy = requestAction[req.id] === 'accepting' || requestAction[req.id] === 'rejecting';
-        return (
-          <div key={req.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-amber-200 dark:border-amber-700 overflow-hidden">
-            <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                Solicitud de {req.from_name}
-              </p>
-            </div>
-            <div className="p-4 space-y-3">
-              {/* Tabla Das / Recibes */}
-              <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                <div className="grid grid-cols-2 bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">📤 Das</span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">📥 Recibes</span>
-                </div>
-                <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {req.trades.map((trade, i) => (
-                    <div key={i} className="grid grid-cols-2 gap-2 px-3 py-2">
-                      <TradePill s={trade.give} />
-                      <TradePill s={trade.receive} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* Acciones */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleReject(req.id)}
-                  disabled={busy}
-                  className="flex-1 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-semibold active:scale-95 transition-transform disabled:opacity-40"
-                >
-                  {requestAction[req.id] === 'rejecting' ? 'Rechazando…' : 'Rechazar'}
-                </button>
-                <button
-                  onClick={() => handleAccept(req.id)}
-                  disabled={busy}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:scale-95 transition-transform disabled:opacity-40"
-                >
-                  {requestAction[req.id] === 'accepting' ? 'Aceptando…' : 'Aceptar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <button
+      onClick={() => setShowRequests(true)}
+      className="w-full flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl px-4 py-3 active:scale-[0.99] transition-transform"
+    >
+      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+      <span className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex-1 text-left">
+        Tienes {pendingRequests.length} solicitud{pendingRequests.length !== 1 ? 'es' : ''} pendiente{pendingRequests.length !== 1 ? 's' : ''}
+      </span>
+      <span className="text-amber-600 text-sm">→</span>
+    </button>
   );
+
+  if (showRequests) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowRequests(false)}
+              className="text-blue-500 text-sm font-medium"
+            >← Volver</button>
+            <h1 className="text-base font-bold text-gray-800 dark:text-gray-100 flex-1">
+              Solicitudes pendientes{pendingRequests.length > 0 ? ` · ${pendingRequests.length}` : ''}
+            </h1>
+          </div>
+
+          {pendingRequests.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-8">No hay solicitudes pendientes</p>
+          )}
+
+          {pendingRequests.map(req => {
+            const busy = requestAction[req.id] === 'accepting' || requestAction[req.id] === 'rejecting';
+            return (
+              <div key={req.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-amber-200 dark:border-amber-700 overflow-hidden">
+                <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    Solicitud de {req.from_name}
+                  </p>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                    <div className="grid grid-cols-2 bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">📤 Das</span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">📥 Recibes</span>
+                    </div>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {req.trades.map((trade, i) => (
+                        <div key={i} className="grid grid-cols-2 gap-2 px-3 py-2">
+                          <TradePill s={trade.give} />
+                          <TradePill s={trade.receive} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleReject(req.id)}
+                      disabled={busy}
+                      className="flex-1 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-semibold active:scale-95 transition-transform disabled:opacity-40"
+                    >
+                      {requestAction[req.id] === 'rejecting' ? 'Rechazando…' : 'Rechazar'}
+                    </button>
+                    <button
+                      onClick={() => handleAccept(req.id)}
+                      disabled={busy}
+                      className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:scale-95 transition-transform disabled:opacity-40"
+                    >
+                      {requestAction[req.id] === 'accepting' ? 'Aceptando…' : 'Aceptar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   if (duplicates.length === 0) {
     return (

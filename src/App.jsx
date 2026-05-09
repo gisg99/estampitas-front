@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import BottomNav from "./components/BottomNav";
 import InicioScreen from "./screens/InicioScreen";
 import EstampitasScreen from "./screens/EstampitasScreen";
@@ -14,10 +14,11 @@ const getTradeParam = () => {
 };
 
 const App = () => {
-  const [token,       setToken]       = useState(() => localStorage.getItem('token'));
-  const [activeTab,   setActiveTab]   = useState("inicio");
-  const [tradeUserId, setTradeUserId] = useState(() => getTradeParam());
-  const [darkMode,    setDarkMode]    = useState(() => {
+  const [token,             setToken]             = useState(() => localStorage.getItem('token'));
+  const [activeTab,         setActiveTab]         = useState("inicio");
+  const [tradeUserId,       setTradeUserId]       = useState(() => getTradeParam());
+  const [pendingTradeCount, setPendingTradeCount] = useState(0);
+  const [darkMode,          setDarkMode]          = useState(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     if (saved) document.documentElement.classList.add('dark');
     return saved;
@@ -56,10 +57,16 @@ const App = () => {
     setActiveTab('intercambio');
   }
 
+  const handlePendingCountChange = useCallback((n) => setPendingTradeCount(n), []);
+
   const screens = {
     inicio:      <InicioScreen />,
     estampitas:  <EstampitasScreen />,
-    intercambio: <IntercambioScreen tradeUserId={tradeUserId} onClearTrade={() => setTradeUserId(null)} />,
+    intercambio: <IntercambioScreen
+                   tradeUserId={tradeUserId}
+                   onClearTrade={() => setTradeUserId(null)}
+                   onPendingCountChange={handlePendingCountChange}
+                 />,
     perfil:      <PerfilScreen onLogout={handleLogout} darkMode={darkMode} onToggleDark={toggleDark} />,
   };
 
@@ -68,7 +75,7 @@ const App = () => {
       <main className="flex-1 overflow-y-auto pb-16">
         {screens[activeTab]}
       </main>
-      <BottomNav active={activeTab} onChange={handleTabChange} />
+      <BottomNav active={activeTab} onChange={handleTabChange} pendingTradeCount={pendingTradeCount} />
     </div>
   );
 };

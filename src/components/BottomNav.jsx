@@ -39,7 +39,7 @@ const tabs = [
   },
 ];
 
-const BottomNav = ({ active, onChange }) => {
+const BottomNav = ({ active, onChange, pendingTradeCount = 0 }) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center h-16 z-50">
       {tabs.map(tab => (
@@ -50,7 +50,12 @@ const BottomNav = ({ active, onChange }) => {
             active === tab.id ? 'text-blue-500' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
-          {tab.icon}
+          <div className="relative">
+            {tab.icon}
+            {tab.id === 'intercambio' && pendingTradeCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900" />
+            )}
+          </div>
           <span>{tab.label}</span>
         </button>
       ))}
